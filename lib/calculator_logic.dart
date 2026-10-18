@@ -1,4 +1,6 @@
-/// Ошибка вычисления. Сообщение можно показывать пользователю как есть.
+import 'dart:math' as math;
+
+// Ошибка вычисления. Сообщение можно показывать пользователю как есть.
 class CalculatorException implements Exception {
   const CalculatorException(this.message);
 
@@ -8,8 +10,8 @@ class CalculatorException implements Exception {
   String toString() => message;
 }
 
-/// Чистая бизнес-логика: разбор и вычисление выражений.
-/// Ничего не знает о виджетах и состоянии интерфейса.
+// Чистая бизнес-логика: разбор и вычисление выражений.
+// Ничего не знает о виджетах и состоянии интерфейса.
 class CalculatorLogic {
   CalculatorLogic._();
 
@@ -19,20 +21,25 @@ class CalculatorLogic {
   static const String divide = '÷';
   static const List<String> operators = [plus, minus, times, divide];
 
-  /// Числа длиннее этого порога не показываем, чтобы не получить запись вида 1e+20.
+  // Числа длиннее этого порога не показываем, чтобы не получить запись вида 1e+20.
   static const double maxAbsValue = 1e15;
 
   static bool isOperator(String ch) => operators.contains(ch);
 
-  /// Цифра или десятичная точка.
+  // Синус угла, заданного в градусах: sinDegrees(30) = 0.5.
+  // Шум вида 1.2e-16 (для 180°) убирает format().
+  static double sinDegrees(double degrees) =>
+      math.sin(degrees * math.pi / 180);
+
+  // Цифра или десятичная точка.
   static bool isNumberChar(String ch) {
     if (ch == '.') return true;
     final code = ch.codeUnitAt(0);
     return code >= 48 && code <= 57;
   }
 
-  /// Вычисляет выражение с учётом приоритета операций (× и ÷ раньше + и −).
-  /// Допускает унарный минус: «5×−3».
+  // Вычисляет выражение с учётом приоритета операций (× и ÷ раньше + и −).
+  // Допускает унарный минус: «5×−3».
   static double evaluate(String expression) {
     final tokens = _tokenize(expression);
     if (tokens.isEmpty) {
@@ -48,7 +55,7 @@ class CalculatorLogic {
     return value;
   }
 
-  /// Форматирует число для показа: 13.0 -> «13», 0.30000000000000004 -> «0.3».
+  // Форматирует число для показа: 13.0 -> «13», 0.30000000000000004 -> «0.3».
   static String format(double value) {
     if (value == 0) return '0';
     var text = value.toStringAsFixed(10);
@@ -93,14 +100,27 @@ class CalculatorLogic {
       tokens.add(value);
     }
 
-    for (final rune in expression.runes) {
-      final ch = String.fromCharCode(rune);
+    final runes = expression.runes.toList();
+    for (var i = 0; i < runes.length; i++) {
+      final ch = String.fromCharCode(runes[i]);
       if (ch == ' ') continue;
       if (isNumberChar(ch)) {
         buffer.write(ch);
         continue;
       }
       flush();
+      if (ch == 's' &&
+          i + 2 < runes.length &&
+          String.fromCharCode(runes[i + 1]) == 'i' &&
+          String.fromCharCode(runes[i + 2]) == 'n') {
+        tokens.add('sin');
+        i += 2;
+        continue;
+      }
+      if (ch == '(' || ch == ')') {
+        tokens.add(ch);
+        continue;
+      }
       tokens.add(_normalizeOperator(ch));
     }
     flush();
@@ -108,10 +128,10 @@ class CalculatorLogic {
   }
 }
 
-/// Рекурсивный спуск:
-///   expression := term (('+' | '−') term)*
-///   term       := unary (('×' | '÷') unary)*
-///   unary      := ('−' | '+') unary | number
+
+//   expression := term (('+' | '−') term)*
+//   term       := unary (('×' | '÷') unary)*
+//   unary      := ('−' | '+') unary | number | '(' expression ')' | 'sin(' expression ')'
 class _Parser {
   _Parser(this._tokens);
 
@@ -167,10 +187,40 @@ class _Parser {
       _pos++;
       return _unary();
     }
+    if (token is double) return _primary();
+    if (token == '(' || token == 'sin') return _primary();
+    throw const CalculatorException('Некорректное выражение');
+  }
+
+  double _primary() {
+    final token = _current;
     if (token is double) {
       _pos++;
       return token;
     }
+    if (token == '(') {
+      _pos++;
+      final value = _expression();
+      _expectClosingParenthesis();
+      return value;
+    }
+    if (token == 'sin') {
+      _pos++;
+      if (_current != '(') {
+        throw const CalculatorException('Некорректное выражение');
+      }
+      _pos++;
+      final angle = _expression();
+      _expectClosingParenthesis();
+      return CalculatorLogic.sinDegrees(angle);
+    }
     throw const CalculatorException('Некорректное выражение');
+  }
+
+  void _expectClosingParenthesis() {
+    if (_current != ')') {
+      throw const CalculatorException('Некорректное выражение');
+    }
+    _pos++;
   }
 }

@@ -61,10 +61,16 @@ void main() {
 
   group('Логика', () {
     test('приоритет операций', () => expect(tap('2+3*4=').result, '14'));
-    test('погрешность double скрыта', () => expect(tap('0.1+0.2=').result, '0.3'));
+    test(
+      'погрешность double скрыта',
+      () => expect(tap('0.1+0.2=').result, '0.3'),
+    );
     test('предварительный результат', () => expect(tap('2+3').result, '5'));
     test('оператор заменяется', () => expect(tap('5+*3=').result, '15'));
-    test('продолжение с результатом', () => expect(tap('2+3=*4=').result, '20'));
+    test(
+      'продолжение с результатом',
+      () => expect(tap('2+3=*4=').result, '20'),
+    );
     test('после ошибки ввод начинается заново', () {
       final calc = tap('5/0=7');
       expect(calc.hasError, isFalse);
@@ -79,6 +85,28 @@ void main() {
     test('десятичная точка', () {
       expect(tap('.5').expression, '0.5');
       expect(tap('1..2').expression, '1.2');
+    });
+    test('синус можно ввести до числа', () {
+      final calc = CalculatorState();
+      calc.sin();
+      calc.inputDigit('3');
+      calc.inputDigit('0');
+      expect(calc.expression, 'sin(30');
+      calc.equals();
+      expect(calc.result, '0.5');
+    });
+    test('синус работает внутри выражения', () {
+      final calc = CalculatorState();
+      calc.inputDigit('2');
+      calc.inputOperator(CalculatorLogic.plus);
+      calc.sin();
+      calc.inputDigit('3');
+      calc.inputDigit('0');
+      calc.equals();
+      expect(calc.result, '2.5');
+    });
+    test('парсер вычисляет синус в градусах', () {
+      expect(CalculatorLogic.evaluate('sin(30)'), closeTo(0.5, 1e-12));
     });
   });
 

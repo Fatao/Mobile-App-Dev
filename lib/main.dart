@@ -7,7 +7,7 @@ void main() {
   runApp(const CalculatorApp());
 }
 
-/// Корневой виджет. Хранит выбранную тему (дополнительное задание: тёмная тема).
+// Корневой виджет. Хранит выбранную тему (дополнительное задание: тёмная тема).
 class CalculatorApp extends StatefulWidget {
   const CalculatorApp({super.key});
 
@@ -115,7 +115,7 @@ class _CalculatorPageState extends State<CalculatorPage> {
   }
 }
 
-/// Верхняя область: выражение и результат.
+// Верхняя область: выражение и результат.
 class _Display extends StatelessWidget {
   const _Display({
     required this.expression,
@@ -179,8 +179,8 @@ class _Display extends StatelessWidget {
   }
 }
 
-/// Сетка кнопок. Кнопки растягиваются под доступную высоту и ширину,
-/// поэтому элементы не выходят за границы экрана.
+// Сетка кнопок. Кнопки растягиваются под доступную высоту и ширину,
+// поэтому элементы не выходят за границы экрана.
 class _Keypad extends StatelessWidget {
   const _Keypad({required this.calc});
 
@@ -213,6 +213,15 @@ class _Keypad extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
       child: Column(
         children: [
+          row([
+            _CalcKey(
+              id: 'key_sin',
+              label: 'sin',
+              kind: _KeyKind.function,
+              flex: 4,
+              onPressed: calc.sin,
+            ),
+          ]),
           row([
             _CalcKey(
               id: 'key_clear',
